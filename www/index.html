@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>My chat server</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+</head>
+
+<body>
+	<h1>HELLO</h1>
+	<div>
+		<textarea id="chatBox" cols="50" rows="20"></textarea>
+	</div>
+	<div>
+		<input id="message" placeholder="Enter chat message" type="text">
+		<button>Send Message</button>
+		<div style='display: flex;margin: auto'>
+			<p id="name-box">Name: Anonymous</p>
+			<button id="changeNameButton">Change Name</button></div>
+	</div>
+	<div>user list
+		<ul id="user-list"></ul>
+	</div>
+	<script src="bundle.js"></script>
+</body>
+
+</html>
