@@ -1,4 +1,4 @@
-FROM keymetrics/pm2:latest
+FROM keymetrics/pm2:8
 
 # Bundle APP files
 COPY www www/
@@ -7,7 +7,7 @@ COPY pm2.json .
 
 # Install app dependencies
 ENV NPM_CONFIG_LOGLEVEL warn
-RUN npm install --production
+RUN npm install
 
 # Show current folder structure in logs
 RUN ls -al -R
