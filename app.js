@@ -53,6 +53,7 @@ io.on('connection', function (socket) {
 	});
 
 	socket.on('disconnect', function () {
+		console.log("Disconnected");
 		delete clients[socket.id];
 		io.to('roomA').emit('userlist', getClientList());
 	});
