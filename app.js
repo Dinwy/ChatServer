@@ -6,6 +6,7 @@ const uuid = require('uuid');
 const app = express();
 const server = require('http').createServer(app);
 const io = socketIO(server);
+const redis = require("redis")
 
 server.listen(8080);
 io.set('heartbeat interval', 1000);
@@ -13,48 +14,62 @@ io.set('heartbeat timeout', 1200);
 
 app.use('/', express.static(process.cwd() + '/www'));
 
-let clients = {};
-
-function getClientList() {
-	let clientList = [];
-	for (let clientId in clients) {
-		let client = clients[clientId];
-		clientList.push(client.name);
-	}
-	return clientList;
-}
+// Predefined room name
+const roomName = 'roomA';
 
 // Keep your code clean by Cedric
-io.on('connection', function (socket) {
-	console.log('Connected');
-	let clientId = uuid.v4();
+io.on('connection', (socket) => {
+	const client = redis.createClient();
+	const clientId = uuid.v4();
 
-	let client = {
+	// Create information
+	let clientData = {
 		socket: socket,
 		name: 'Anonymous',
 		uuid: clientId
 	};
 
-	clients[socket.id] = client;
+	client.on("error", (err) => console.error(err));
+	client.on("ready", (err) => {
+		client.hmset(`user:${clientId}`, 'name', clientData.name, 'uuid', clientData.uuid, redis.print)
+		console.log(`Client ready`)
+	});
 
-	socket.join('roomA');
-	io.to('roomA').emit('userlist', getClientList());
+	socket.join(roomName, (err) => {
+		if (err) {
+			socket.disconnect();
+			console.log('Error has been ocurred');
+			return;
+		}
 
-	socket.on('sendMsg', function (data) {
+		// Save clientIds
+		client.sadd(`room:${roomName}:users`, clientData.name)
+	});
+
+	client.smembers(`room:${roomName}:users`, (err, users) => {
+		if (err) return
+
+		console.log(`users: ${users}`)
+		if (users.length )
+		io.to(roomName).emit('userlist', users);
+	});
+
+	socket.on('sendMsg', (data) => {
 		socket.emit('getMsg', { name: client.name, msg: data.msg });
 		socket.broadcast.emit('getMsg', { name: client.name, msg: data.msg });
 	});
 
-	socket.on('changeName', function (data) {
-		console.log(`${data}`);
-		clients[socket.id] = client;
-		client.name = data.name;
-		io.to('roomA').emit('userlist', getClientList());
+	socket.on('changeName', (data) => {
+		console.log(`${JSON.stringify(data)}`);
 	});
 
-	socket.on('disconnect', function () {
-		console.log("Disconnected");
-		delete clients[socket.id];
-		io.to('roomA').emit('userlist', getClientList());
+	socket.on('disconnect', () => {
+		console.log(`${clientId} Disconnected`);
+
+		const room = io.sockets.adapter.rooms[roomName];
+		console.log(room);
+
+		client.del(`user:${clientId}`, redis.print)
+		// io.to('roomA').emit('userlist', getClientList());
 	});
 });
